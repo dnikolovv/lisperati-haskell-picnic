@@ -104,7 +104,14 @@ findLotCenter p = let (l,t,r,b) = boundingRect p
                     in minimumBy (comparing $ distance m) $ concat $ th ++ bh
 
 makeDot :: Point -> Polygon 
-makeDot (x,y) = [(x-2,y-2),(x+2,y-2),(x+2,y+2),(x-2,y+2)]                        
+makeDot (x,y) = [(x-2,y-2),(x+2,y-2),(x+2,y+2),(x-2,y+2)]
+
+shortestLinks :: Int -> [Link] -> [Link] 
+shortestLinks n = (take n).(sortBy $ comparing linkLength) 
+ where linkLength [a,b] = distance a b 
+
+sittingNeighbors :: Int -> [Point] -> [Link] 
+sittingNeighbors n p = nub $ shortestLinks (n * (length p)) [[a,b] | a <- p, b <- p, a /= b]
     
 main :: IO ()
 main = do 
@@ -140,3 +147,8 @@ main = do
   let spots = blue $ map makeDot centers
 
   writeFile "tut5.svg" $ writePolygons $ (green park) ++ spots
+
+  let sitting = sittingNeighbors 4 centers
+  
+  writeFile "tut6.svg" $ writePolygons $ (green park) ++ spots ++ (red sitting)
+  
