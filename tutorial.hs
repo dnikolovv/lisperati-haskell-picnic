@@ -117,6 +117,25 @@ walkingNeighbors :: Int -> [Point] -> [Link]
 walkingNeighbors n l = nub $ concatMap myNeighbors l
     where myNeighbors :: Point -> [Link] 
           myNeighbors p = shortestLinks n [sort [p,c] | c <- l, p /= c]
+
+mismatches :: Person -> Person -> Int 
+mismatches a b = length $ filter (uncurry (/=)) $ zip a b
+
+similarityColor :: Person -> Person -> Color 
+similarityColor p1 p2 = let m = mismatches p1 p2   
+                            h = div (length p1) 2  
+                            d = 30 * (abs (h - m)) 
+                            b = max 0 (255-d)      
+                            o = min d 255          
+                              in if m < h
+                                 then (0,o,b)
+                                 else (o,0,b)
+
+findPerson :: Placement -> Point -> Person 
+findPerson a p | Just (_,e) <- find ((== p).fst) a = e
+
+similarityLine :: Placement -> Link -> (Color,Polygon) 
+similarityLine l [p1,p2] = (similarityColor (findPerson l p1) (findPerson l p2),[p1,p2])          
     
 main :: IO ()
 main = do 
@@ -160,3 +179,7 @@ main = do
   let walking = walkingNeighbors 4 centers
   
   writeFile "tut7.svg" $ writePolygons $ (green park) ++ spots ++ (red walking)
+
+  let starting_placement = zip centers people
+  
+  writeFile "tut8.svg" $ writePolygons $ map (similarityLine starting_placement) sitting
