@@ -43,6 +43,24 @@ triangulate :: Polygon -> [Polygon]
 triangulate (a:b:c:xs) = [a,b,c]:triangulate (a:c:xs)
 triangulate _ = []                                                
 
+clipTriangle :: (Point -> Point -> Point) -> [Point] -> [Point] -> [Polygon] 
+clipTriangle _ [] [_,_,_] = [] 
+clipTriangle i [a]  [b,c] = [[a,i a b,i a c]]
+clipTriangle i [a,b]  [c] = [[a,i a c,b],[b,i a c,i b c]]
+clipTriangle _ [a,b,c] [] = [[a,b,c]]
+
+slice :: (Point -> Bool) -> (Point -> Point -> Point) -> [Polygon] -> ([Polygon],[Polygon]) 
+slice f i t = (clip f,clip $ not.f)
+    where clip g = concatMap ((uncurry $ clipTriangle i).(partition g)) t 
+                
+sliceX :: Float -> [Polygon] -> ([Polygon],[Polygon]) 
+sliceX x = slice ((x >).fst) interpolateX
+    where interpolateX (x1,y1) (x2,y2) = (x,y1+(y2-y1)*(x-x1)/(x2-x1)) 
+
+sliceY :: Float -> [Polygon] -> ([Polygon],[Polygon]) 
+sliceY y = slice ((y >).snd) interpolateY
+    where interpolateY (x1,y1) (x2,y2) = (x1+(x2-x1)*(y-y1)/(y2-y1),y) 
+
 main :: IO ()
 main = do 
   putStr "Hello World! Let's have a picnic! \n"
@@ -62,5 +80,9 @@ main = do
   writeFile "tut1.svg" $ writePolygons (green park)
 
   let triangles = concatMap triangulate park
-  
+
   writeFile "tut2.svg" $ writePolygons (purple triangles)
+
+  let (left_side,right_side) = sliceX 200 triangles
+  
+  writeFile "tut3.svg" $ writePolygons $ (red left_side) ++ (blue right_side)
