@@ -112,6 +112,11 @@ shortestLinks n = (take n).(sortBy $ comparing linkLength)
 
 sittingNeighbors :: Int -> [Point] -> [Link] 
 sittingNeighbors n p = nub $ shortestLinks (n * (length p)) [[a,b] | a <- p, b <- p, a /= b]
+
+walkingNeighbors :: Int -> [Point] -> [Link] 
+walkingNeighbors n l = nub $ concatMap myNeighbors l
+    where myNeighbors :: Point -> [Link] 
+          myNeighbors p = shortestLinks n [sort [p,c] | c <- l, p /= c]
     
 main :: IO ()
 main = do 
@@ -152,3 +157,6 @@ main = do
   
   writeFile "tut6.svg" $ writePolygons $ (green park) ++ spots ++ (red sitting)
   
+  let walking = walkingNeighbors 4 centers
+  
+  writeFile "tut7.svg" $ writePolygons $ (green park) ++ spots ++ (red walking)
