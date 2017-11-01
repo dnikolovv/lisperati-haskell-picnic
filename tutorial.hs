@@ -152,6 +152,17 @@ picnicTemperature m c = 50.0 * (exp (0.0 - (5.0 * ((fromIntegral c) / (fromInteg
 
 picnicTransitionalProbability :: TransitionProbabilityFunction 
 picnicTransitionalProbability e1 e2 t = exp ((fromIntegral (e1 - e2)) / t)
+
+anneal_tick :: MotionFunction a -> TransitionProbabilityFunction -> EnergyFunction a -> Float -> (StdGen,a) -> (StdGen,a) 
+anneal_tick mf tpf ef t (r,p) = let (r2,p2) = mf r p    
+                                    (n ,r3) = random r2 
+                                in (r3,
+                                    if n < tpf (ef p) (ef p2) t
+                                    then p2
+                                    else p)
+
+anneal :: EnergyFunction a -> MotionFunction a -> TransitionProbabilityFunction -> TemperatureFunction -> Int -> StdGen -> a -> a 
+anneal ef mf tpf tf m r s = snd $ foldl' (flip (anneal_tick mf tpf ef)) (r,s) (map (tf m) [0..m])
     
 main :: IO ()
 main = do 
@@ -207,3 +218,25 @@ main = do
   
   putStr "starting temperature: "
   print $ picnicTemperature annealing_time annealing_time
+
+  random_generator <- getStdGen
+  
+  putStr "starting annealing... "
+  putStr "number of annealing steps: "
+  print annealing_time
+  
+  let ideal_placement = anneal 
+                        (picnicEnergy sitting)
+                        (picnicMotion walking)
+                        picnicTransitionalProbability 
+                        picnicTemperature 
+                        annealing_time 
+                        random_generator 
+                        starting_placement
+  
+  writeFile "tut9.svg" $ writePolygons $ map (similarityLine ideal_placement) sitting
+  
+  putStr "Done!\nfinal energy: "
+  print $ picnicEnergy sitting ideal_placement
+  putStr "final temperature: "
+  print $ picnicTemperature 0 annealing_time
