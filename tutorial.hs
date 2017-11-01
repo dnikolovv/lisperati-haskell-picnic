@@ -135,7 +135,23 @@ findPerson :: Placement -> Point -> Person
 findPerson a p | Just (_,e) <- find ((== p).fst) a = e
 
 similarityLine :: Placement -> Link -> (Color,Polygon) 
-similarityLine l [p1,p2] = (similarityColor (findPerson l p1) (findPerson l p2),[p1,p2])          
+similarityLine l [p1,p2] = (similarityColor (findPerson l p1) (findPerson l p2),[p1,p2])     
+
+picnicEnergy :: [Link] -> EnergyFunction Placement 
+picnicEnergy l a = sum $ map linkEnergy l
+    where linkEnergy :: Link -> Int 
+          linkEnergy [p1,p2] = mismatches (findPerson a p1) (findPerson a p2)
+
+picnicMotion :: [Link] -> MotionFunction Placement 
+picnicMotion l r a = let (n,r2) = randomR (0,(length l)-1) r 
+                         [p1,p2] = l!!n                      
+                     in (r2,(p1,findPerson a p2):(p2,findPerson a p1):(filter (not.((flip elem) [p1,p2]).fst) a))
+
+picnicTemperature :: TemperatureFunction 
+picnicTemperature m c = 50.0 * (exp (0.0 - (5.0 * ((fromIntegral c) / (fromIntegral m)))))
+
+picnicTransitionalProbability :: TransitionProbabilityFunction 
+picnicTransitionalProbability e1 e2 t = exp ((fromIntegral (e1 - e2)) / t)
     
 main :: IO ()
 main = do 
@@ -181,5 +197,13 @@ main = do
   writeFile "tut7.svg" $ writePolygons $ (green park) ++ spots ++ (red walking)
 
   let starting_placement = zip centers people
-  
+
   writeFile "tut8.svg" $ writePolygons $ map (similarityLine starting_placement) sitting
+
+  let annealing_time = 500
+  
+  putStr "starting energy: "
+  print $ picnicEnergy sitting starting_placement
+  
+  putStr "starting temperature: "
+  print $ picnicTemperature annealing_time annealing_time
