@@ -15,5 +15,13 @@ type TemperatureFunction           = Int -> Int -> Float
 type TransitionProbabilityFunction = Int -> Int -> Float -> Float
 type MotionFunction a              = StdGen -> a -> (StdGen,a)
 
+main :: IO ()
 main = do 
   putStr "Hello World! Let's have a picnic! \n"
+  people_text <- readFile "people.txt"
+
+  let people :: [Person]
+      people = read people_text
+
+  putStr "Number of people coming: "
+  print (length people)
